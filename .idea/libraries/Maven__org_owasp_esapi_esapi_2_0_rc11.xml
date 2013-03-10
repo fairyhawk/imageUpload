@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: org.owasp.esapi:esapi:2.0_rc11">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/owasp/esapi/esapi/2.0_rc11/esapi-2.0_rc11.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/org/owasp/esapi/esapi/2.0_rc11/esapi-2.0_rc11-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/owasp/esapi/esapi/2.0_rc11/esapi-2.0_rc11-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
