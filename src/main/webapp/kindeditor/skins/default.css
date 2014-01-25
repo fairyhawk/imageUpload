@@ -708,7 +708,7 @@
 	margin: 5px;
 }
 .ke-dialog-no {
-	margin: 5px 10px 5px 5px;
+	margin: 5px 10px 10px 5px;
 }
 .ke-mask {
 	border:0;
@@ -739,6 +739,8 @@
 	vertical-align: middle;
 	zoom: 1;
 	*display: inline;
+	width:auto;
+	float:right;
 }
 .ke-button {
 	background-position: right 0;
@@ -882,7 +884,7 @@
 	margin:2px;
 	width:24px;
 	height:24px;
-	background-image:url(../plugins/emoticons/qq.gif);
+	background-image:url(../plugins/emoticons/qq.gif);
 	margin: 0;
 	padding: 0;
 	border: 0;
