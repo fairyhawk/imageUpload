@@ -15,8 +15,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.yizhilu.os.image.util.FileUtil;
-import com.yizhilu.os.image.util.PropertyUtil;
+import com.yizhilu.os.core.util.FileUtil;
+import com.yizhilu.os.core.util.PropertyUtil;
 
 /**
  * 上传图片用
@@ -50,17 +50,19 @@ public class UploadImageContoller {
         String referer = request.getHeader("referer");
         Pattern p = Pattern.compile("([a-z]*:(//[^/?#]+)?)?", Pattern.CASE_INSENSITIVE);
         Matcher mathcer = p.matcher(referer);
+        logger.info("referer:"+referer);
         if (mathcer.find()) {
             String callBackPath = mathcer.group();// 请求来源
             JsonObject json = FileUtil.kindeditorUpload(request, "imgFile");
             // 编辑器中需要返回完整的路径
             json.addProperty("url",
-                    propertyUtil.getProperty("import.root") + json.get("url"));
+                    propertyUtil.getProperty("import.root") + json.get("url").getAsString());
             // 同域时直接返回json即可无需redirect
             String url = "redirect:" + callBackPath
-                    + "/kindeditor/plugins/image/redirect.html#" + json.getAsString();
+                    + "/kindeditor/plugins/image/redirect.html#" + json.toString();
             return url;
         }
+        logger.info("img ok");
         return null;
     }
 
@@ -82,7 +84,7 @@ public class UploadImageContoller {
             JsonObject json = FileUtil.kindeditorUpload(request, "fileupload");
             // 同域时直接返回json即可无需redirect
             String url = "redirect:" + callBackPath
-                    + "/kindeditor/plugins/image/redirect.html#" + json;
+                    + "/kindeditor/plugins/image/redirect.html#" + json.get("url").getAsString();
             logger.info("++++upload img return:" + url);
             return url;
         } else {

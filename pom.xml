@@ -288,7 +288,12 @@
 			 <version>2.2.4</version>
 			</dependency>
 			<!-- json -->
-			
+			<!-- core -->
+			<dependency>
+			    <groupId>com.yizhilu.os</groupId>
+			    <artifactId>core</artifactId>
+			 	<version>1.0</version>
+			</dependency>
 	</dependencies>
 
 
