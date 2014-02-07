@@ -290,8 +290,8 @@
 			<!-- json -->
 			<!-- core -->
 			<dependency>
-			    <groupId>com.yizhilu.os</groupId>
-			    <artifactId>core</artifactId>
+			    <groupId>com.yizhilu</groupId>
+			    <artifactId>mvc-core</artifactId>
 			 	<version>1.0</version>
 			</dependency>
 	</dependencies>
