@@ -116,13 +116,12 @@ public class UploadImageContoller {
      * @param response
      * @return
      */
-    @RequestMapping(value = "/imgk3", method = RequestMethod.POST)
+    @RequestMapping(value = "/imgk3")
     @ResponseBody
     public String imgk3(HttpServletRequest request, HttpServletResponse response) {
         String referer = request.getHeader("referer");
         Pattern p = Pattern.compile("([a-z]*:(//[^/?#]+)?)?", Pattern.CASE_INSENSITIVE);
         Matcher mathcer = p.matcher(referer);
-        logger.info("referer:" + referer);
         if (mathcer.find()) {
             StringBuffer buffer = new StringBuffer();
             String callBackPath = mathcer.group();// 请求来源
@@ -152,7 +151,7 @@ public class UploadImageContoller {
                         + "        iframe_proxy.src = '"
                         + callBackPath
                         + "/kindeditor/plugins/image/call_back.html#'+encodeURIComponent('"
-                        + json.getAsString() + "');\n"
+                        + json + "');\n"
                         + "        document.body.appendChild(iframe_proxy);\n"
                         + "    };\n" + "</script>\n" + "</head>\n"
                         + "<body onload=\"upload_callback();\">\n" + "\n"
@@ -190,7 +189,8 @@ public class UploadImageContoller {
                     + "/kindeditor/plugins/image/redirect.html#"
                     + json.get("url").getAsString();
             logger.info("++++upload img return:" + url);
-            return url;
+            return propertyUtil.getProperty("import.root")
+                    + json.get("url").getAsString();
         } else {
             return null;
         }
@@ -204,15 +204,15 @@ public class UploadImageContoller {
      * @param response
      */
 
-    @RequestMapping(value = "/saveface", method = RequestMethod.POST)
+    @RequestMapping(value = "/saveface")
     @ResponseBody
     public String saveface(HttpServletRequest request, HttpServletResponse response) {
         String referer = request.getHeader("referer");
+        System.out.println("referer:" + referer);
         Pattern p = Pattern.compile("([a-z]*:(//[^/?#]+)?)?", Pattern.CASE_INSENSITIVE);
         Matcher mathcer = p.matcher(referer);
 
         if (mathcer.find()) {
-            String callBackPath = mathcer.group();// 请求来源
             String photoPath = request.getParameter("photoPath");
             int imageWidth = Integer.parseInt(request.getParameter("txt_width"));
             int imageHeight = Integer.parseInt(request.getParameter("txt_height"));
@@ -223,10 +223,9 @@ public class UploadImageContoller {
             int dropHeight = 0;
             if (StringUtils.isNotEmpty(request.getParameter("txt_DropWidth"))
                     && StringUtils.isNotEmpty(request.getParameter("txt_DropHeight"))) {
+
                 dropWidth = Integer.parseInt(request.getParameter("txt_DropWidth"));
                 dropHeight = Integer.parseInt(request.getParameter("txt_DropHeight"));
-                CUS_PHOTO_WIDTH = dropWidth;
-                CUS_PHOTO_HEIGHT = dropHeight;
             } else {
                 // 未传参数时默认150
                 dropWidth = CUS_PHOTO_WIDTH;
@@ -235,15 +234,31 @@ public class UploadImageContoller {
 
             JsonObject json = FileUtil.saveCutImage(photoPath, imageWidth, imageHeight,
                     cutLeft, cutTop, dropWidth, dropHeight);
-            // 同域时直接返回json即可无需redirect
-            String url = "redirect:" + callBackPath
-                    + "/kindeditor/plugins/image/redirect.html#"
-                    + json.get("url").getAsString();
-            logger.info("++++upload img return:" + url);
-            return url;
+
+            json.addProperty("src", json.get("url").getAsString());
+            json.addProperty("status", "1");
+            String callname = request.getParameter("callback");
+            System.out.println(callname + "(" + json.toString() + ")");
+            return callname + "(" + json.toString() + ")";
+
         } else {
             return null;
         }
     }
+    
+    
+    @RequestMapping(value = "/goswf")
+    @ResponseBody
+    public String goswf(HttpServletRequest request, HttpServletResponse response) {
+
+        MultipartHttpServletRequest multipartRequest = (MultipartHttpServletRequest) request;
+        MultipartFile imgFile = multipartRequest.getFile("fileupload");
+        String[] paths = FileUtil.getSavePathByRequest(request);
+        JsonObject json = FileUtil.saveImage(imgFile, paths);
+        logger.info("++++upload img return:" + json.get("url").getAsString());
+        return json.get("url").getAsString();
+    
+    }
+    
 
 }
