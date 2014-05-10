@@ -5,7 +5,7 @@
 * @author Roddy <luolonghao@gmail.com>
 * @website http://www.kindsoft.net/
 * @licence http://www.kindsoft.net/license.php
-* @version 4.1.9 (2013-10-08)
+* @version 4.1.10 (2013-11-23)
 *******************************************************************************/
 (function (window, undefined) {
 	if (window.KindEditor) {
@@ -17,9 +17,10 @@ if (!window.console) {
 if (!console.log) {
 	console.log = function () {};
 }
-var _VERSION = '4.1.9 (2013-10-08)',
+var _VERSION = '4.1.10 (2013-11-23)',
 	_ua = navigator.userAgent.toLowerCase(),
 	_IE = _ua.indexOf('msie') > -1 && _ua.indexOf('opera') == -1,
+	_NEWIE = _ua.indexOf('msie') == -1 && _ua.indexOf('trident') > -1,
 	_GECKO = _ua.indexOf('gecko') > -1 && _ua.indexOf('khtml') == -1,
 	_WEBKIT = _ua.indexOf('applewebkit') > -1,
 	_OPERA = _ua.indexOf('opera') > -1,
@@ -398,15 +399,17 @@ _extend(KEvent, {
 		var ev = this.event;
 		if (ev.preventDefault) {
 			ev.preventDefault();
+		} else {
+			ev.returnValue = false;
 		}
-		ev.returnValue = false;
 	},
 	stopPropagation : function() {
 		var ev = this.event;
 		if (ev.stopPropagation) {
 			ev.stopPropagation();
+		} else {
+			ev.cancelBubble = true;
 		}
-		ev.cancelBubble = true;
 	},
 	stop : function() {
 		this.preventDefault();
@@ -727,7 +730,8 @@ function _formatHtml(html, htmlTags, urlType, wellFormatted, indentChar) {
 	html = html.replace(/(<(?:p|p\s[^>]*)>)\s*(<\/p>)/ig, '$1<br />$2');
 	html = html.replace(/\u200B/g, '');
 	html = html.replace(/\u00A9/g, '&copy;');
-	html = html.replace(/<[^>]+>/g, function($0) {
+	html = html.replace(/\u00AE/g, '&reg;');
+	html = html.replace(/<[^>]+/g, function($0) {
 		return $0.replace(/\s+/g, ' ');
 	});
 	var htmlTagMap = {};
@@ -1273,7 +1277,7 @@ function _docWidth(doc) {
 function _getScrollPos(doc) {
 	doc = doc || document;
 	var x, y;
-	if (_IE || _OPERA) {
+	if (_IE || _NEWIE || _OPERA) {
 		x = _docElement(doc).scrollLeft;
 		y = _docElement(doc).scrollTop;
 	} else {
@@ -3103,30 +3107,19 @@ _extend(KCmd, {
 		});
 	},
 	forecolor : function(val) {
-		return this.toggle('<span style="color:' + val + ';"></span>', {
-			span : '.color=' + val,
-			font : 'color'
-		});
+		return this.wrap('<span style="color:' + val + ';"></span>').select();
 	},
 	hilitecolor : function(val) {
-		return this.toggle('<span style="background-color:' + val + ';"></span>', {
-			span : '.background-color=' + val
-		});
+		return this.wrap('<span style="background-color:' + val + ';"></span>').select();
 	},
 	fontsize : function(val) {
-		return this.toggle('<span style="font-size:' + val + ';"></span>', {
-			span : '.font-size=' + val,
-			font : 'size'
-		});
+		return this.wrap('<span style="font-size:' + val + ';"></span>').select();
 	},
 	fontname : function(val) {
 		return this.fontfamily(val);
 	},
 	fontfamily : function(val) {
-		return this.toggle('<span style="font-family:' + val + ';"></span>', {
-			span : '.font-family=' + val,
-			font : 'face'
-		});
+		return this.wrap('<span style="font-family:' + val + ';"></span>').select();
 	},
 	removeformat : function() {
 		var map = {
@@ -3724,12 +3717,16 @@ _extend(KEdit, KWidget, {
 		!isDocumentDomain && ready();
 	},
 	setWidth : function(val) {
-		this.div.css('width', _addUnit(val));
-		return this;
+		var self = this;
+		val = _addUnit(val);
+		self.width = val;
+		self.div.css('width', val);
+		return self;
 	},
 	setHeight : function(val) {
 		var self = this;
 		val = _addUnit(val);
+		self.height = val;
 		self.div.css('height', val);
 		self.iframe.css('height', val);
 		if ((_IE && _V < 8) || _QUIRKS) {
@@ -4159,7 +4156,7 @@ _extend(KUploadButton, {
 		var html = [
 			'<div class="ke-inline-block ' + cls + '">',
 			(options.target ? '' : '<iframe name="' + target + '" style="display:none;"></iframe>'),
-			(options.form ? '<div class="ke-upload-area">' : '<form class="ke-upload-area ke-form" method="post" enctype="multipart/form-data" target="' + target + '" action="' + url + '">'),
+			(options.form ? '<div class="ke-upload-area">' : '<form  class="ke-upload-area ke-form"  style="min-width:54px;" method="post" enctype="multipart/form-data" target="' + target + '" action="' + url + '">'),
 			'<span class="ke-button-common">',
 			hiddenElements.join(''),
 			'<input type="button" class="ke-button-common ke-button" value="' + title + '" />',
@@ -4175,6 +4172,8 @@ _extend(KUploadButton, {
 		self.iframe = options.target ? K('iframe[name="' + target + '"]') : K('iframe', div);
 		self.form = options.form ? K(options.form) : K('form', div);
 		self.fileBox = K('.ke-upload-file', div);
+		var width = options.width || K('.ke-button-common', div).width();
+		K('.ke-upload-area', div).width(width);
 		self.options = options;
 	},
 	submit : function() {
@@ -4189,18 +4188,22 @@ _extend(KUploadButton, {
 			K(tempForm).remove(true);
 			var doc = K.iframeDoc(iframe),
 				pre = doc.getElementsByTagName('pre')[0],
-				str = '', data;
+				str = '', data ,strbak ='';
 			if (pre) {
 				str = pre.innerHTML;
 			} else {
 				str = doc.body.innerHTML;
 			}
-			str = _unescape(str);
+			strbak = str = _unescape(str);
 			iframe[0].src = 'javascript:false';
 			try {
 				data = K.json(str);
 			} catch (e) {
-				self.options.afterError.call(self, '<!doctype html><html>' + doc.body.parentNode.innerHTML + '</html>');
+				try {
+					data = K.json(Url.decode(strbak));
+				}catch (e2) {
+					self.options.afterError.call(self, '<!doctype html><html>' + doc.body.parentNode.innerHTML + '</html>');
+				}
 			}
 			if (data) {
 				self.options.afterUpload.call(self, data);
@@ -5476,17 +5479,17 @@ K.sync = function(expr) {
 		this.sync();
 	});
 };
-K.html = function(expr, val) {
-	_eachEditor(expr, function() {
-		this.html(val);
-	});
-};
 K.get = function(expr) {
 	var obj;
 	_eachEditor(expr, function() {
 		obj = this;
 	});
 	return obj;
+};
+K.html = function(expr, val) {
+	_eachEditor(expr, function() {
+		this.html(val);
+	});
 };
 K.insertHtml = function(expr, val) {
 	_eachEditor(expr, function() {
@@ -6275,34 +6278,44 @@ KindEditor.plugin('autoheight', function(K) {
 		return;
 	}
 
-	var edit = self.edit;
-	var body = edit.doc.body;
-	var minHeight = K.removeUnit(self.height);
+	var minHeight;
 
-	edit.iframe[0].scroll = 'no';
-	body.style.overflowY = 'hidden';
+	function hideScroll() {
+		var edit = self.edit;
+		var body = edit.doc.body;
+		edit.iframe[0].scroll = 'no';
+		body.style.overflowY = 'hidden';
+	}
 
 	function resetHeight() {
+		var edit = self.edit;
+		var body = edit.doc.body;
 		edit.iframe.height(minHeight);
 		self.resize(null, Math.max((K.IE ? body.scrollHeight : body.offsetHeight) + 76, minHeight));
 	}
 
-	/*
-	* 如何实现真正的自动高度？
-	* 修改编辑器高度之后，再次获取body内容高度时，最小值只会是当前iframe的设置高度，这样就导致高度只增不减。
-	* 所以每次获取body内容高度之前，先将iframe的高度重置为最小高度，这样就能获取body的实际高度。
-	* 由此就实现了真正的自动高度
-	* 测试：chrome、firefox、IE9、IE8
-	* */
+	function init() {
+		minHeight = K.removeUnit(self.height);
 
-	edit.afterChange(resetHeight);
+		self.edit.afterChange(resetHeight);
+		hideScroll();
+		resetHeight();
+	}
 
 	if (self.isCreated) {
-		resetHeight();
+		init();
 	} else {
-		self.afterCreate(resetHeight);
+		self.afterCreate(init);
 	}
 });
+
+/*
+* 如何实现真正的自动高度？
+* 修改编辑器高度之后，再次获取body内容高度时，最小值只会是当前iframe的设置高度，这样就导致高度只增不减。
+* 所以每次获取body内容高度之前，先将iframe的高度重置为最小高度，这样就能获取body的实际高度。
+* 由此就实现了真正的自动高度
+* 测试：chrome、firefox、IE9、IE8
+* */
 /*******************************************************************************
 * KindEditor - WYSIWYG HTML Editor for Internet
 * Copyright (C) 2006-2011 kindsoft.net
@@ -7161,8 +7174,7 @@ KindEditor.plugin('image', function(K) {
 				if (data.error === 0) {
 					var url = data.url;
 					if (formatUploadUrl) {
-						url = K.formatUrl(url, 'domain');//absolute
-						//alert("imagerurl:"+url);
+						url = K.formatUrl(url, 'domain');
 					}
 					if (self.afterUpload) {
 						self.afterUpload.call(self, url, data, name);
@@ -7180,7 +7192,8 @@ KindEditor.plugin('image', function(K) {
 			},
 			afterError : function(html) {
 				dialog.hideLoading();
-				self.errorDialog(html);
+				alert(html);
+				//self.errorDialog(html);
 			}
 		});
 		uploadbutton.fileBox.change(function(e) {
